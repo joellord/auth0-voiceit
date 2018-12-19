@@ -7,9 +7,9 @@ UIUpdate.loggedIn = function(tokens) {
 };
 
 UIUpdate.loggedOut = function() {
-  localStorage.removeItem("access_token");
   loginBtn.classList.remove("d-none");
   logoutBtn.classList.add("d-none");
+  UIUpdate.alertBox("Logged Out");
 };
 
 UIUpdate.routeChange = function() {

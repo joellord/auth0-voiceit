@@ -12,6 +12,8 @@
 <script>
 const ENDPOINT = "https://wt-13aebf4eeaa9913542725d4a90e4d49e-0.sandbox.auth0-extend.com/voiceit/voiceit_endpoint";
 const TOKEN = "https://wt-13aebf4eeaa9913542725d4a90e4d49e-0.sandbox.auth0-extend.com/voiceit/voiceit_token";
+// const ENDPOINT = "http://localhost:8888/voiceit_endpoint";
+// const TOKEN = "http://localhost:8888/voiceit_token";
 const AUTH0_URL = "https://auth0-voiceit.auth0.com";
 
 let queryParams = {};
@@ -23,27 +25,34 @@ auth0State = queryParams.state;
 
 let myVoiceIt = new VoiceIt2.initialize(ENDPOINT, "./vendor/face_detector.wasm");
 
-fetch(TOKEN).then(resp => resp.json()).then(data => {
+fetch(`${TOKEN}?userId=${queryParams.userId}`).then(resp => resp.json()).then(data => {
   console.log(data);
   myVoiceIt.setSecureToken(data.Token);
 
   myVoiceIt.encapsulatedFaceVerification({
     // Set to true to present user with liveness challenges
-    doLiveness:false,
-    completionCallback:function(success){
+    // doLiveness:true,
+    // phrase:'never forget tomorrow is a new day',  
+    // contentLanguage:'en-US',
+
+    completionCallback:function(success, response){
       if(success){
         // Successfully verified user, now user can
         // be redirected to a protected page
         // Note: In addition to successfully verifying the user on
         // the frontend make sure to also check the json response on
         // the backend and successfully verify on the backend for true security.
-        alert('Successfully verified face');
-      } else {
-        alert('Face Verification Cancelled or Failed!');
 
         //Redirect to Auth0
-        location.replace(`${AUTH0_URL}/continue?state=${auth0State}`);
+        console.log("Success");
+
+      } else {
+        console.log('Face Verification Cancelled or Failed!');
+
+
       }
+      location.replace(`${AUTH0_URL}/continue?state=${auth0State}&token=${response.token}`);
+
     }
   });
 });

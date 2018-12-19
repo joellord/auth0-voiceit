@@ -15,8 +15,8 @@ const jwks = require("jwks-rsa");
 
 const BASE_URL = 'https://api.voiceit.io';
 const BASE_PATH = "/tmp/";
-const VOICEIT_API_TOKEN = "voiceit token";
-const VOICEIT_API_KEY = "voiceit key";
+const VOICEIT_API_TOKEN = "";
+const VOICEIT_API_KEY = "";
 
 function checkFileExists(filePath, callback) {
   if (!fs.existsSync(filePath)) {
@@ -144,7 +144,7 @@ function VoiceIt2(apk, tok) {
           case "createVoiceEnrollment":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var tempFilePath = writeFileBuffer(BASE_PATH+req.files[0].buffer, 'wav', function(){
+              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'wav', function(){
                 mainThis.createVoiceEnrollment({
                   userId: extractedUserId,
                   contentLanguage: contentLang,
@@ -157,7 +157,7 @@ function VoiceIt2(apk, tok) {
               });
               break;
           case "createFaceEnrollment":
-              var tempFilePath = writeFileBuffer(BASE_PATH+req.files[0].buffer, 'jpg', function(){
+              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'jpg', function(){
                 mainThis.createFaceEnrollment({
                   userId: extractedUserId,
                   videoFilePath: tempFilePath
@@ -170,7 +170,7 @@ function VoiceIt2(apk, tok) {
           case "createVideoEnrollment":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var tempFilePath = writeFileBuffer(BASE_PATH+req.files[0].buffer, '.mp4', function(){
+              var tempFilePath = writeFileBuffer(req.files[0].buffer, '.mp4', function(){
                 mainThis.createVideoEnrollment({
                   userId: extractedUserId,
                   contentLanguage: contentLang,
@@ -185,7 +185,7 @@ function VoiceIt2(apk, tok) {
           case "voiceVerification":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var tempFilePath = writeFileBuffer(BASE_PATH+req.files[0].buffer,'.wav', function(){
+              var tempFilePath = writeFileBuffer(req.files[0].buffer,'.wav', function(){
                 mainThis.voiceVerification({
                   userId: extractedUserId,
                   contentLanguage: contentLang,
@@ -199,7 +199,7 @@ function VoiceIt2(apk, tok) {
               });
               break;
           case "faceVerification":
-              var tempFilePath = writeFileBuffer(BASE_PATH+req.files[0].buffer, 'mp4', function(){
+              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'mp4', function(){
                 mainThis.faceVerification({
                   userId: extractedUserId,
                   videoFilePath: tempFilePath
@@ -211,7 +211,7 @@ function VoiceIt2(apk, tok) {
               });
               break;
           case "faceVerificationWithLiveness":
-              var tempFilePath = writeFileBuffer(BASE_PATH+req.files[0].buffer, 'jpg', function(){
+              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'jpg', function(){
                 mainThis.faceVerificationWithPhoto({
                     userId: extractedUserId,
                     photoFilePath: tempFilePath
@@ -225,7 +225,7 @@ function VoiceIt2(apk, tok) {
           case "videoVerification":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var tempFilePath = writeFileBuffer(BASE_PATH+req.files[0].buffer, 'mp4', function(){
+              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'mp4', function(){
                 mainThis.videoVerification({
                   userId: extractedUserId,
                   contentLanguage: contentLang,
@@ -241,8 +241,8 @@ function VoiceIt2(apk, tok) {
           case "videoVerificationWithLiveness":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var wavFilePath = writeFileBuffer(BASE_PATH+req.files[0].buffer, 'wav', function(){
-                var jpgFilePath = writeFileBuffer(BASE_PATH+req.files[1].buffer, 'jpg', function(){
+              var wavFilePath = writeFileBuffer(req.files[0].buffer, 'wav', function(){
+                var jpgFilePath = writeFileBuffer(req.files[1].buffer, 'jpg', function(){
                   mainThis.videoVerificationWithPhoto({
                     userId: extractedUserId,
                     contentLanguage: contentLang,
@@ -530,51 +530,70 @@ function VoiceIt2(apk, tok) {
 app.use(bodyParser.json());
 
 app.post('/voiceit_endpoint', multer.any(), function (req, res) {
-	const myVoiceIt = new VoiceIt2(VOICEIT_API_KEY, VOICEIT_API_TOKEN);
-	myVoiceIt.initBackend(req, res, function(jsonObj){
-		const callType = jsonObj.callType.toLowerCase();
-		const userId = jsonObj.userId;
-		if(jsonObj.jsonResponse.responseCode === "SUCC"){
-			// User was successfully verified now log them in via the
-			// backend, this could mean starting a new session with
-			// their details, after you lookup the user with the
-			// provided VoiceIt userId
-			console.log("Success");
-		} else {
-		  console.error("Error!", jsonObj);
-		}
-	});
+  const myVoiceIt = new VoiceIt2(VOICEIT_API_KEY, VOICEIT_API_TOKEN);
+  myVoiceIt.initBackend(req, res, function(jsonObj){
+    const callType = jsonObj.callType.toLowerCase();
+    const userId = jsonObj.userId;
+    
+    
+    let token = jwt.sign({
+      userId: userId,
+      userAuthenticated: (jsonObj.jsonResponse.responseCode === "SUCC")
+    }, "auth0-voiceit-shared");
+    jsonObj.jsonResponse.token = token;
+    
+    if(jsonObj.jsonResponse.responseCode === "SUCC"){
+      // User was successfully verified now log them in via the
+      // backend, this could mean starting a new session with
+      // their details, after you lookup the user with the
+      // provided VoiceIt userId
+      
+      // Generate a JWT that will be used as proof that the user is
+      // identified.
+      
+      console.log("Success");
+    } else {
+      console.error("Error!", jsonObj);
+    }
+  });
 });
 
 app.get('/voiceit_token', function (req, res) {
-	// Upon a successful login, lookup the associated VoiceIt userId
-	const VOICEIT_USERID = "usr_aab59d33096a40ad8f1b006989eaa848";
+  // Upon a successful login, lookup the associated VoiceIt userId
+  const VOICEIT_USERID = req.query.userId;
+  // Initialize module and replace this with your own credentials
+  const myVoiceIt = new VoiceIt2(VOICEIT_API_KEY, VOICEIT_API_TOKEN);
+  
+  if (VOICEIT_USERID) {
+    // Generate a new token for the userId
+    const createdToken = myVoiceIt.generateTokenForUser(VOICEIT_USERID);
+  
+    // Then return this token to the front end, for example as part of a jsonResponse
+    res.json({
+      'ResponseCode': 'SUCC',
+      'Message' : 'Successfully authenticated user',
+      'Token' : createdToken
+    });
+  } else {
+    myVoiceIt.createUser(user => {
+      let userId = user.userId;
+      const createdToken = myVoiceIt.generateTokenForUser(userId);
+      res.json({
+      'ResponseCode': 'SUCC',
+      'Message' : 'Successfully authenticated user',
+      'Token' : createdToken,
+      'userId': userId
+      });
+    });
+  }
 
-	// Initialize module and replace this with your own credentials
-	const myVoiceIt = new VoiceIt2(VOICEIT_API_KEY, VOICEIT_API_TOKEN);
 
-	// Generate a new token for the userId
-	const createdToken = myVoiceIt.generateTokenForUser(VOICEIT_USERID);
-
-  console.log("Generated token", createdToken);
-	// Then return this token to the front end, for example as part of a jsonResponse
-  res.json({
-    'ResponseCode': 'SUCC',
-    'Message' : 'Successfully authenticated user',
-    'Token' : createdToken
-  });
-});
-
-app.get('/test', (req, res) => {
-  fs.readdir(BASE_PATH, (err, files) => {
-    res.json(files);
-  });
 });
 
 //Auth0 stuff
 const auth0Config = {
-  audience: "auth0 audience",
-  issuer: "auth0 issuer",
+  audience: "voiceit-demo",
+  issuer: "https://auth0-voiceit.auth0.com/",
 };
 const jwtCheck = expressjwt({
   secret: jwks.expressJwtSecret({
@@ -597,4 +616,3 @@ app.get("/api/private", jwtCheck, (req, res) => {
 });
 
 module.exports = Webtask.fromExpress(app);
-
