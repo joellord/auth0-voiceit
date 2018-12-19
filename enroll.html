@@ -30,9 +30,9 @@ fetch(`${TOKEN}`).then(resp => resp.json()).then(data => {
   myVoiceIt.setSecureToken(data.Token);
   let userId = data.userId;
 
-  myVoiceIt.encapsulatedFaceEnrollment({
-      // phrase:'never forget tomorrow is a new day',  
-      // contentLanguage:'en-US',
+  myVoiceIt.encapsulatedVideoEnrollment({
+      phrase:'never forget tomorrow is a new day',  
+      contentLanguage:'en-US',
 
       completionCallback:function(success, options){
       if(success){

@@ -29,11 +29,11 @@ fetch(`${TOKEN}?userId=${queryParams.userId}`).then(resp => resp.json()).then(da
   console.log(data);
   myVoiceIt.setSecureToken(data.Token);
 
-  myVoiceIt.encapsulatedFaceVerification({
+  myVoiceIt.encapsulatedVideoVerification({
     // Set to true to present user with liveness challenges
-    // doLiveness:true,
-    // phrase:'never forget tomorrow is a new day',  
-    // contentLanguage:'en-US',
+    doLiveness:true,
+    phrase:'never forget tomorrow is a new day',  
+    contentLanguage:'en-US',
 
     completionCallback:function(success, response){
       if(success){
