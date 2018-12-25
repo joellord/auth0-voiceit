@@ -1,41 +1,39 @@
 function (user, context, callback) {
-  console.log("Rule starts");
-  console.log(context.protocol);
-  if (context.protocol === "redirect-callback") {
-    // User was redirected to the /continue endpoint
-    console.log("Back");
-    // Was it an enrollment?
-    if (context.request.query.enrolled) {
-      // New enrollment, add to metadata
-      console.log(`New user ${context.request.query.enrolled}`);
-      user.user_metadata = user.user_metadata || {};
-      user.user_metadata.voiceitId = context.request.query.enrolled;
-      auth0.users.updateUserMetadata(user.user_id, user.user_metadata).then(function(){
-        callback(null, user, context);
-      });
-      return callback(null, user, context);
-    } else {
-      // Logged in 
-      // Validate the token
-      let payload = jwt.verify(context.request.query.token, "auth0-voiceit-shared");
-     
-      if (payload.userAuthenticated) {
-         return callback(null, user, context);
-      } else {
-        return callback(new UnauthorizedError("MFA with VoiceIt failed"));
-      }
-       
-    }
-  } else {
-    console.log("Prepare redirect");
+  let err = null;
+
+  // First time hitting this rule, prepare redirection
+  if (context.protocol !== "redirect-callback") {
+    // If the user is already enrolled, he should have a VoiceIt ID
     const voiceitId = (user.user_metadata && user.user_metadata.voiceitId) ? user.user_metadata.voiceitId : null;
-    const BASE = "https://auth0-playground.com/voiceit/";
-    const page = voiceitId ? `2fa.html?userId=${voiceitId}` : "enroll.html";
-    const redirectUrl = `${BASE}${page}`;
+    const BASE = "https://auth0-playground.com/voiceit";
+    const page = "2fa.html";
+    const params = voiceitId ? `userId=${voiceitId}` : "";
+    const redirectUrl = `${BASE}/${page}?${params}`;
+
     context.redirect = {
       url: redirectUrl
     };
-    return callback(null, user, context);
   }
-  
+
+  // Following an enrollment
+  if (context.protocol === "redirect-callback" && context.request.query.enrolled) {
+    user.user_metadata = user.user_metadata || {};
+    user.user_metadata.voiceitId = context.request.query.enrolled;
+    auth0.users.updateUserMetadata(user.user_id, user.user_metadata).then(function() {
+      callback(err, user, context);
+    });
+  }
+
+  // Following a 2FA with VoiceIt
+  if (context.protocol === "redirect-callback") {
+    // Decode JWT
+    let payload = jwt.verify(context.request.query.token, "auth0-voiceit-shared");
+
+    if (!payload.userAuthenticated) {
+      // 2FA failed
+      err = new UnauthorizedError("MFA with VoiceIt failed");
+    }
+  }
+
+  return callback(err, user, context);
 }

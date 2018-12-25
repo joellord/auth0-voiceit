@@ -1,22 +1,26 @@
-var express    = require('express');
-var Webtask    = require('webtask-tools');
-var bodyParser = require('body-parser');
-var app = express();
+// Webtask requires
+const express = require('express');
+const Webtask = require('webtask-tools');
+const bodyParser = require('body-parser');
+const app = express();
+
+// VoiceIt requires
+const multer = require("multer")();
+
+// API requires
+const randopeep = require("randopeep");
+const expressjwt = require("express-jwt");
+const jwks = require("jwks-rsa");
+
+// ********************** VoiceIt2 File ****************************
 
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 const uuidv4 = require('uuidv4');
-const multer = require("multer")();
-
-const expressjwt = require("express-jwt");
-const jwks = require("jwks-rsa");
 
 const BASE_URL = 'https://api.voiceit.io';
-const BASE_PATH = "/tmp/";
-const VOICEIT_API_TOKEN = "";
-const VOICEIT_API_KEY = "";
 
 function checkFileExists(filePath, callback) {
   if (!fs.existsSync(filePath)) {
@@ -26,8 +30,8 @@ function checkFileExists(filePath, callback) {
   return true;
 }
 
-function writeFileBuffer(buffer, extension, done){
-  var filePath = `${BASE_PATH}${uuidv4()}.${extension}`;
+function writeFileBuffer(path, buffer, extension, done){
+  var filePath = `${path}${uuidv4()}.${extension}`;
   var wstream = fs.createWriteStream(filePath);
   wstream.write(buffer);
   wstream.on('finish', done);
@@ -44,7 +48,13 @@ function formatResponse(callType, userId, jsonResponse){
   return jsonResponseObj;
 }
 
-function VoiceIt2(apk, tok) {
+function VoiceIt2(apk, tok, options) {
+  // Set default options
+  if (!options) options = {};
+  this.options = {
+    tempFilePath: options.tempFilePath || ""
+  };
+  
   this.axiosInstance = axios.create({
     auth: {
       username: apk,
@@ -144,7 +154,7 @@ function VoiceIt2(apk, tok) {
           case "createVoiceEnrollment":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'wav', function(){
+              var tempFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[0].buffer, 'wav', function(){
                 mainThis.createVoiceEnrollment({
                   userId: extractedUserId,
                   contentLanguage: contentLang,
@@ -157,7 +167,7 @@ function VoiceIt2(apk, tok) {
               });
               break;
           case "createFaceEnrollment":
-              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'jpg', function(){
+              var tempFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[0].buffer, 'jpg', function(){
                 mainThis.createFaceEnrollment({
                   userId: extractedUserId,
                   videoFilePath: tempFilePath
@@ -170,7 +180,7 @@ function VoiceIt2(apk, tok) {
           case "createVideoEnrollment":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var tempFilePath = writeFileBuffer(req.files[0].buffer, '.mp4', function(){
+              var tempFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[0].buffer, '.mp4', function(){
                 mainThis.createVideoEnrollment({
                   userId: extractedUserId,
                   contentLanguage: contentLang,
@@ -185,7 +195,7 @@ function VoiceIt2(apk, tok) {
           case "voiceVerification":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var tempFilePath = writeFileBuffer(req.files[0].buffer,'.wav', function(){
+              var tempFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[0].buffer,'.wav', function(){
                 mainThis.voiceVerification({
                   userId: extractedUserId,
                   contentLanguage: contentLang,
@@ -199,7 +209,7 @@ function VoiceIt2(apk, tok) {
               });
               break;
           case "faceVerification":
-              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'mp4', function(){
+              var tempFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[0].buffer, 'mp4', function(){
                 mainThis.faceVerification({
                   userId: extractedUserId,
                   videoFilePath: tempFilePath
@@ -211,7 +221,7 @@ function VoiceIt2(apk, tok) {
               });
               break;
           case "faceVerificationWithLiveness":
-              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'jpg', function(){
+              var tempFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[0].buffer, 'jpg', function(){
                 mainThis.faceVerificationWithPhoto({
                     userId: extractedUserId,
                     photoFilePath: tempFilePath
@@ -225,7 +235,7 @@ function VoiceIt2(apk, tok) {
           case "videoVerification":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var tempFilePath = writeFileBuffer(req.files[0].buffer, 'mp4', function(){
+              var tempFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[0].buffer, 'mp4', function(){
                 mainThis.videoVerification({
                   userId: extractedUserId,
                   contentLanguage: contentLang,
@@ -241,8 +251,8 @@ function VoiceIt2(apk, tok) {
           case "videoVerificationWithLiveness":
               var phrase = req.body.viPhrase;
               var contentLang = req.body.viContentLanguage;
-              var wavFilePath = writeFileBuffer(req.files[0].buffer, 'wav', function(){
-                var jpgFilePath = writeFileBuffer(req.files[1].buffer, 'jpg', function(){
+              var wavFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[0].buffer, 'wav', function(){
+                var jpgFilePath = writeFileBuffer(mainThis.options.tempFilePath, req.files[1].buffer, 'jpg', function(){
                   mainThis.videoVerificationWithPhoto({
                     userId: extractedUserId,
                     contentLanguage: contentLang,
@@ -522,75 +532,73 @@ function VoiceIt2(apk, tok) {
 
 }
 
-// *********************************************
+// *******************************  End of VoiceIt2 File  ***********************
 
 
 
 
 app.use(bodyParser.json());
 
-app.post('/voiceit_endpoint', multer.any(), function (req, res) {
-  const myVoiceIt = new VoiceIt2(VOICEIT_API_KEY, VOICEIT_API_TOKEN);
+const VOICEIT_OPTIONS = {
+  tempFilePath: "/tmp/"
+};
+
+app.post("/voiceit_endpoint", multer.any(), (req, res) => {
+  const myVoiceIt = new VoiceIt2(req.webtaskContext.secrets.VOICEIT_API_KEY, req.webtaskContext.secrets.VOICEIT_API_TOKEN, VOICEIT_OPTIONS);
   myVoiceIt.initBackend(req, res, function(jsonObj){
     const callType = jsonObj.callType.toLowerCase();
     const userId = jsonObj.userId;
     
-    
+    // Build a JWT proving the user was authenticated or not
     let token = jwt.sign({
       userId: userId,
       userAuthenticated: (jsonObj.jsonResponse.responseCode === "SUCC")
     }, "auth0-voiceit-shared");
+    
+    // Add the JWT to the JSON response
     jsonObj.jsonResponse.token = token;
     
     if(jsonObj.jsonResponse.responseCode === "SUCC"){
-      // User was successfully verified now log them in via the
-      // backend, this could mean starting a new session with
-      // their details, after you lookup the user with the
-      // provided VoiceIt userId
-      
-      // Generate a JWT that will be used as proof that the user is
-      // identified.
-      
-      console.log("Success");
+      console.log(`User ${jsonObj.userId} Authenticated`);
     } else {
       console.error("Error!", jsonObj);
     }
   });
 });
 
-app.get('/voiceit_token', function (req, res) {
+app.get("/voiceit_token", (req, res) => {
   // Upon a successful login, lookup the associated VoiceIt userId
   const VOICEIT_USERID = req.query.userId;
-  // Initialize module and replace this with your own credentials
-  const myVoiceIt = new VoiceIt2(VOICEIT_API_KEY, VOICEIT_API_TOKEN);
+  // Initialize module
+  const myVoiceIt = new VoiceIt2(req.webtaskContext.secrets.VOICEIT_API_KEY, req.webtaskContext.secrets.VOICEIT_API_TOKEN, VOICEIT_OPTIONS);
   
+  // If a userId is provided, do a verification.  If not, assume this is an 
+  // enrollment and create a new userId to be associated with the Auth0 user
   if (VOICEIT_USERID) {
     // Generate a new token for the userId
     const createdToken = myVoiceIt.generateTokenForUser(VOICEIT_USERID);
   
     // Then return this token to the front end, for example as part of a jsonResponse
     res.json({
-      'ResponseCode': 'SUCC',
-      'Message' : 'Successfully authenticated user',
-      'Token' : createdToken
+      "ResponseCode": "SUCC",
+      "Message" : "Successfully authenticated user",
+      "Token" : createdToken
     });
   } else {
     myVoiceIt.createUser(user => {
       let userId = user.userId;
       const createdToken = myVoiceIt.generateTokenForUser(userId);
       res.json({
-      'ResponseCode': 'SUCC',
-      'Message' : 'Successfully authenticated user',
-      'Token' : createdToken,
-      'userId': userId
+        "ResponseCode": "SUCC",
+        "Message" : "Successfully created new user",
+        "Token" : createdToken,
+        "userId": userId
       });
     });
   }
-
-
 });
 
-//Auth0 stuff
+//Auth0 configuration and JWT check options
 const auth0Config = {
   audience: "voiceit-demo",
   issuer: "https://auth0-voiceit.auth0.com/",
@@ -607,12 +615,15 @@ const jwtCheck = expressjwt({
   algorithms: ['RS256']
 });
 
+// This is a public endpoint that returns randomly generated clickbait headlines
 app.get("/api/public", (req, res) => {
-  res.send("Hello Public").status(200);
+  res.send(randopeep.clickbait.headline()).status(200);
 });
 
+// This endpoint requires a valid Auth0 JWT and will respond back with a randomly
+// generated clickbait headline featuring yours truly
 app.get("/api/private", jwtCheck, (req, res) => {
-  res.send("Hello Private").status(200);
+  res.send(randopeep.clickbait.headline("Joel Lord")).status(200);
 });
 
 module.exports = Webtask.fromExpress(app);
