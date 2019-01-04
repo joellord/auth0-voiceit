@@ -16,7 +16,7 @@ auth.logout = () => {
   auth.tokens.ACCESS_TOKEN = "";
   auth.tokens.ID_TOKEN = "";
   setTimeout(() => webAuth.logout({
-    returnTo: "https://auth0-playground.com/voiceit",
+    returnTo: AUTH0_CONFIG.redirectUri,
     clientID: AUTH0_CONFIG.clientID
   }), 0);
 };
