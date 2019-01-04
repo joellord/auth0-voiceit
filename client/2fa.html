@@ -9,18 +9,14 @@
 
 
 <script src="./vendor/voiceit2.min.js"></script>
-<script src="./voiceit.js"></script>
+<script src="voiceit.js"></script>
 <script>
 // Extract query parameters to figure out what going on
-let queryParams = {};
-location.href.substr(location.href.indexOf("?") + 1).split("&").map(i => {
-  let el = i.split("=");
-  queryParams[el[0]] = el[1];
-});
+const queryParams = new URLSearchParams(window.location.search);
 
 let myVoiceIt = new VoiceItHelper({
-  userId: queryParams.userId,
-  auth0State: queryParams.state,
+  userId: queryParams.get("userId"),
+  auth0State: queryParams.get("state"),
   skipLivenessCheck: false,
   mode: "video"
 });
