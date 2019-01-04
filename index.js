@@ -23,61 +23,6 @@ app.use(cors());
 // Serve the files from /client
 app.use(express.static("./client"));
 
-app.post("/voiceit_endpoint", multer.any(), (req, res) => {
-  const myVoiceIt = new VoiceIt2(config.VOICEIT_API_KEY, config.VOICEIT_API_TOKEN);
-  myVoiceIt.initBackend(req, res, function(jsonObj){
-    const callType = jsonObj.callType.toLowerCase();
-    const userId = jsonObj.userId;
-
-    // Build a JWT proving the user was authenticated or not
-    let token = jwt.sign({
-      userId: userId,
-      userAuthenticated: (jsonObj.jsonResponse.responseCode === "SUCC")
-    }, "auth0-voiceit-shared");
-
-    // Add the JWT to the JSON response
-    jsonObj.jsonResponse.token = token;
-
-    if(jsonObj.jsonResponse.responseCode === "SUCC"){
-      console.log(`User ${jsonObj.userId} Authenticated`);
-    } else {
-      console.error("Error!", jsonObj);
-    }
-  });
-});
-
-app.get("/voiceit_token", (req, res) => {
-  // Upon a successful login, lookup the associated VoiceIt userId
-  const VOICEIT_USERID = req.query.userId;
-  // Initialize module
-  const myVoiceIt = new VoiceIt2(config.VOICEIT_API_KEY, config.VOICEIT_API_TOKEN);
-
-  // If a userId is provided, do a verification.  If not, assume this is an
-  // enrollment and create a new userId to be associated with the Auth0 user
-  if (VOICEIT_USERID) {
-    // Generate a new token for the userId
-    const createdToken = myVoiceIt.generateTokenForUser(VOICEIT_USERID);
-
-    // Then return this token to the front end, for example as part of a jsonResponse
-    res.json({
-      "ResponseCode": "SUCC",
-      "Message" : "Successfully authenticated user",
-      "Token" : createdToken
-    });
-  } else {
-    myVoiceIt.createUser(user => {
-      let userId = user.userId;
-      const createdToken = myVoiceIt.generateTokenForUser(userId);
-      res.json({
-        "ResponseCode": "SUCC",
-        "Message" : "Successfully created new user",
-        "Token" : createdToken,
-        "userId": userId
-      });
-    });
-  }
-});
-
 //Auth0 configuration and JWT check options
 const auth0Config = {
   audience: config.AUTH0_AUDIENCE,
