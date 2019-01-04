@@ -12,7 +12,7 @@ headlineBtn.addEventListener("click", () => {
 });
 
 secretBtn.addEventListener("click", (event) => {
-  fetcher(`${API_URL}${PRIVATE_ENDPOINT}`);
+  fetcher(`${API_URL}${PRIVATE_ENDPOINT}/${auth.getUser()}`);
 });
 
 logoutBtn.addEventListener("click", (event) => {

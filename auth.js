@@ -4,7 +4,8 @@ let webAuth = new auth0.WebAuth(AUTH0_CONFIG);
 let auth = {};
 auth.tokens = {
   ACCESS_TOKEN: "",
-  ID_TOKEN: ""
+  ID_TOKEN: "",
+  ID_TOKEN_PAYLOAD: {}
 };
 
 auth.login = () => {
@@ -36,10 +37,16 @@ auth.parseHash = () => {
       window.location.hash = '';
       auth.tokens.ACCESS_TOKEN = authResult.accessToken;
       auth.tokens.ID_TOKEN = authResult.idToken;
+      auth.tokens.ID_TOKEN_PAYLOAD = authResult.idTokenPayload;
       UIUpdate.loggedIn();
       UIUpdate.alertBox(`Logged in<br>Access Token: ${auth.tokens.ACCESS_TOKEN}<br>ID Token: ${auth.tokens.ID_TOKEN}`);
     }
   });
 };
+
+// Check for the user name in the ID token
+auth.getUser = () => {
+  return auth.tokens.ID_TOKEN_PAYLOAD.name || "";
+}
 
 window.addEventListener("DOMContentLoaded", auth.parseHash);
