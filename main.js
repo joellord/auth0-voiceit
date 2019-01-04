@@ -1,4 +1,4 @@
-const API_URL = "https://wt-13aebf4eeaa9913542725d4a90e4d49e-0.sandbox.auth0-extend.com/voiceit";
+const API_URL = BASE_URL_FOR_YOUR_API;
 const PUBLIC_ENDPOINT = "/api/public";
 const PRIVATE_ENDPOINT = "/api/private";
 

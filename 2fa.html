@@ -19,10 +19,10 @@ location.href.substr(location.href.indexOf("?") + 1).split("&").map(i => {
 });
 
 let myVoiceIt = new VoiceItHelper({
-  userId: queryParams.userId,
-  auth0State: queryParams.state,
-  skipLivenessCheck: false,
-  mode: "video"
+  userId: USER_ID,
+  auth0State: AUTH0_STATE,
+  skipLivenessCheck: LIVENESS_CHECK,
+  mode: VIDEO_OR_FACE
 });
 
 myVoiceIt.start2FAProcess();

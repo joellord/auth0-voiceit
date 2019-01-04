@@ -2,26 +2,29 @@
 let webAuth = new auth0.WebAuth(AUTH0_CONFIG);
 
 let auth = {};
+// Store tokens in memory
 auth.tokens = {
   ACCESS_TOKEN: "",
   ID_TOKEN: "",
   ID_TOKEN_PAYLOAD: {}
 };
 
+// Log in using the Auth0 SDK
 auth.login = () => {
   return webAuth.authorize();
 };
 
+// Logout using the Auth0 SDK
 auth.logout = () => {
   auth.tokens.ACCESS_TOKEN = "";
   auth.tokens.ID_TOKEN = "";
   setTimeout(() => webAuth.logout({
-    returnTo: "https://auth0-playground.com/voiceit",
+    returnTo: AUTH0_CONFIG.redirectUri,
     clientID: AUTH0_CONFIG.clientID
   }), 0);
 };
 
-// TODO Also check for expiry
+// Checks if the user is logged in.  Should also check if the token is expired
 auth.isLoggedIn = () => {
   return !!auth.tokens.ACCESS_TOKEN;
 };
@@ -47,6 +50,6 @@ auth.parseHash = () => {
 // Check for the user name in the ID token
 auth.getUser = () => {
   return auth.tokens.ID_TOKEN_PAYLOAD.name || "";
-}
+};
 
 window.addEventListener("DOMContentLoaded", auth.parseHash);
