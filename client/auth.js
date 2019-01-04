@@ -8,10 +8,12 @@ auth.tokens = {
   ID_TOKEN_PAYLOAD: {}
 };
 
+// Log in using the Auth0 SDK
 auth.login = () => {
   return webAuth.authorize();
 };
 
+// Log out using the Auth0 SDK
 auth.logout = () => {
   auth.tokens.ACCESS_TOKEN = "";
   auth.tokens.ID_TOKEN = "";
@@ -21,7 +23,7 @@ auth.logout = () => {
   }), 0);
 };
 
-// TODO Also check for expiry
+// Checks if a user is logged in.  Should also check if the token is expired.
 auth.isLoggedIn = () => {
   return !!auth.tokens.ACCESS_TOKEN;
 };
@@ -34,7 +36,7 @@ auth.parseHash = () => {
       console.error(err);
       UIUpdate.alertBox(`${err.errorDescription}`);
     } else if (authResult && authResult.accessToken && authResult.idToken) {
-      window.location.hash = '';
+      window.location.hash = "";
       auth.tokens.ACCESS_TOKEN = authResult.accessToken;
       auth.tokens.ID_TOKEN = authResult.idToken;
       auth.tokens.ID_TOKEN_PAYLOAD = authResult.idTokenPayload;
@@ -47,6 +49,6 @@ auth.parseHash = () => {
 // Check for the user name in the ID token
 auth.getUser = () => {
   return auth.tokens.ID_TOKEN_PAYLOAD.name || "";
-}
+};
 
 window.addEventListener("DOMContentLoaded", auth.parseHash);
