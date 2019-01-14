@@ -11,17 +11,7 @@
 <script src="./vendor/voiceit2.min.js"></script>
 <script src="voiceit.js"></script>
 <script>
-// Extract query parameters to figure out what going on
-const queryParams = new URLSearchParams(window.location.search);
-
-let myVoiceIt = new VoiceItHelper({
-  userId: queryParams.get("userId"),
-  auth0State: queryParams.get("state"),
-  skipLivenessCheck: false,
-  mode: "video"
-});
-
-myVoiceIt.start2FAProcess();
+// Code goes here
 </script>
 
 </body>
