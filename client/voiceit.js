@@ -22,13 +22,16 @@ let VoiceItHelper = function(options) {
 
   this.verify = function() {
     let self = this;
-    let nextStep = this.enroll ? "encapsulatedFaceEnrollment" : "encapsulatedFaceVerification";
+    let nextStep = this.enroll ? "encapsulatedVideoEnrollment" : "encapsulatedVideoVerification";
 
     let voiceItOptions = {
+      doLiveness: true,
+      phrase: "never forget tomorrow is a new day",
+      contentLanguage: "en-US",
       completionCallback: (success, response) => {
         let url = `https://${AUTH0_CONFIG.domain}/continue?state=${self.options.auth0State}&`;
         url += (self.enroll) ? `enrolled=${self.options.userId}` : `token=${response.token}`;
-        location.replace(url);
+        location.replace(url);co
       }
     };
 
