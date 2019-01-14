@@ -10,20 +10,24 @@ let VoiceItHelper = function(options) {
   this.getToken = function() {
     let url = `${this.TOKEN_URL}`;
     let self = this;
+    url += this.enroll ? "" : `?userId=${this.options.userId}`;
 
     return fetch(url).then(resp => resp.json()).then(data => {
       self.voiceItInstance.setSecureToken(data.Token);
-      self.options.userId = data.userId;
+      if (this.enroll) {
+        self.options.userId = data.userId;
+      }
     });
   };
 
   this.verify = function() {
     let self = this;
-    let nextStep = "encapsulatedFaceEnrollment";
+    let nextStep = this.enroll ? "encapsulatedFaceEnrollment" : "encapsulatedFaceVerification";
 
     let voiceItOptions = {
       completionCallback: (success, response) => {
-        let url = `https://${AUTH0_CONFIG.domain}/continue?state=${self.options.auth0State}&enrolled=${self.options.userId}`;
+        let url = `https://${AUTH0_CONFIG.domain}/continue?state=${self.options.auth0State}&`;
+        url += (self.enroll) ? `enrolled=${self.options.userId}` : "";
         location.replace(url);
       }
     };
