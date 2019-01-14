@@ -53,4 +53,33 @@ app.get("/api/private/:name?", jwtCheck, (req, res) => {
   res.send(randopeep.clickbait.headline(name)).status(200);
 });
 
+app.get("/voiceit_token", (req, res) => {
+  // Initialize module
+  const myVoiceIt = new VoiceIt2(config.VOICEIT_API_KEY, config.VOICEIT_API_TOKEN);
+
+  myVoiceIt.createUser(user => {
+    let userId = user.userId;
+    const createdToken = myVoiceIt.generateTokenForUser(userId);
+    res.json({
+      "ResponseCode": "SUCC",
+      "Message" : "Successfully created new user",
+      "Token" : createdToken,
+      "userId": userId
+    });
+  });
+});
+
+app.post("/voiceit_endpoint", multer.any(), (req, res) => {
+  const myVoiceIt = new VoiceIt2(config.VOICEIT_API_KEY, config.VOICEIT_API_TOKEN);
+  myVoiceIt.initBackend(req, res, function(jsonObj){
+    const userId = jsonObj.userId;
+
+    if(jsonObj.jsonResponse.responseCode === "SUCC"){
+      console.log(`User ${jsonObj.userId} Authenticated/Enrolled`);
+    } else {
+      console.error("Error!", jsonObj);
+    }
+  });
+});
+
 app.listen("5000", () => console.log("Server started on port 5000"));

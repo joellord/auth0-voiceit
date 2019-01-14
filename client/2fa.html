@@ -12,7 +12,16 @@
 <script src="voiceit.js"></script>
 <script src="config.js"></script>
 <script>
-// Code goes here
+
+  const queryParams = new URLSearchParams(window.location.search);
+
+  let myVoiceIt = new VoiceItHelper({
+    userId: queryParams.get("userId"),
+    auth0State: queryParams.get("state")
+  });
+
+  myVoiceIt.start2FAProcess();
+
 </script>
 
 </body>
