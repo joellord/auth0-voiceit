@@ -88,7 +88,17 @@ app.get("/voiceit_token", (req, res) => {
 app.post("/voiceit_endpoint", multer.any(), (req, res) => {
   const myVoiceIt = new VoiceIt2(config.VOICEIT_API_KEY, config.VOICEIT_API_TOKEN);
   myVoiceIt.initBackend(req, res, function(jsonObj){
+    const callType = jsonObj.callType.toLowerCase();
     const userId = jsonObj.userId;
+
+    // Build a JWT proving the user was authenticated or not
+    let token = jwt.sign({
+      userId: userId,
+      userAuthenticated: (jsonObj.jsonResponse.responseCode === "SUCC")
+    }, "auth0-voiceit-shared");
+
+    // Add the JWT to the JSON response
+    jsonObj.jsonResponse.token = token;
 
     if(jsonObj.jsonResponse.responseCode === "SUCC"){
       console.log(`User ${jsonObj.userId} Authenticated/Enrolled`);
