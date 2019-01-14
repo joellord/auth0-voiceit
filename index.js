@@ -54,19 +54,35 @@ app.get("/api/private/:name?", jwtCheck, (req, res) => {
 });
 
 app.get("/voiceit_token", (req, res) => {
+  // Upon a successful login, lookup the associated VoiceIt userId
+  const VOICEIT_USERID = req.query.userId;
   // Initialize module
   const myVoiceIt = new VoiceIt2(config.VOICEIT_API_KEY, config.VOICEIT_API_TOKEN);
 
-  myVoiceIt.createUser(user => {
-    let userId = user.userId;
-    const createdToken = myVoiceIt.generateTokenForUser(userId);
+  // If a userId is provided, do a verification.  If not, assume this is an
+  // enrollment and create a new userId to be associated with the Auth0 user
+  if (VOICEIT_USERID) {
+    // Generate a new token for the userId
+    const createdToken = myVoiceIt.generateTokenForUser(VOICEIT_USERID);
+
+    // Then return this token to the front end, for example as part of a jsonResponse
     res.json({
       "ResponseCode": "SUCC",
-      "Message" : "Successfully created new user",
-      "Token" : createdToken,
-      "userId": userId
+      "Message" : "Successfully authenticated user",
+      "Token" : createdToken
     });
-  });
+  } else {
+    myVoiceIt.createUser(user => {
+      let userId = user.userId;
+      const createdToken = myVoiceIt.generateTokenForUser(userId);
+      res.json({
+        "ResponseCode": "SUCC",
+        "Message" : "Successfully created new user",
+        "Token" : createdToken,
+        "userId": userId
+      });
+    });
+  }
 });
 
 app.post("/voiceit_endpoint", multer.any(), (req, res) => {
